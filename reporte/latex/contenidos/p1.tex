@@ -1,0 +1,77 @@
+
+\section{Resumen}
+
+En este proyecto nos propusimos investigar cómo funcionan realmente los compiladores modernos, específicamente los del tipo \textit{Just-in-Time} (JIT). La duda principal que queríamos resolver era cómo es posible que estos sistemas mejoren el código mientras el programa ya se está ejecutando. A diferencia de lo que solíamos pensar —que un programa se compila una sola vez y ya—, descubrimos que el JIT actúa más como un copiloto que va ajustando la ruta según el tráfico. Para entender esto a fondo, investigamos conceptos clave como el perfilado dinámico (\textit{profiling}) y las trazas de ejecución. Además, para no quedarnos solo en la teoría, diseñamos una pequeña prueba que simula este comportamiento: un intérprete básico que detecta funciones muy usadas y cambia su ejecución por una versión optimizada, lo que nos permitió ver en la práctica cómo la frecuencia de uso es el detonante para la optimización.
+
+\section{Introducción}
+
+Cuando uno empieza a programar casi siempre nos presentan una división muy clara: por un lado están los lenguajes compilados (como C o C++), que son rápidos pero requieren un paso previo de "traducción"; y por otro, los interpretados (como Python o las versiones viejas de JavaScript), que son flexibles pero generalmente más lentos. Sin embargo, al investigar para este proyecto, nos dimos cuenta de que esa visión se ha quedado un poco obsoletas para explicar cómo funciona el software hoy en día.
+
+La realidad actual es que necesitamos lo mejor de los dos mundos: queremos que el desarrollo sea rápido y dinámico, pero no queremos que la aplicación se arrastre al ejecutarse. Aquí es donde entran los compiladores JIT. La idea central es que el compilador no desaparece cuando termina de generar el ejecutable, sino que se queda "vivo" dentro de la máquina virtual observando qué pasa.
+
+El objetivo de este ensayo es explicar cómo el JIT logra ajustar la optimización del código basándose en el comportamiento real del programa. No se trata de adivinar qué hará el código (como hace el análisis estático), sino de ver qué está haciendo realmente. A lo largo del texto explicaremos el proceso de "perfilado", cómo se toman decisiones de optimización y describiremos el experimento práctico que realizamos para visualizar este fenómeno.
+
+\section{¿Qué es realmente el JIT?}
+
+Para entender el JIT, primero hay que quitarse la idea de que la compilación es un evento único. En nuestra investigación encontramos un artículo muy claro en \textit{freeCodeCamp} que lo explica de una forma muy sencilla: el JIT es básicamente una compilación que ocurre en el último momento posible", justo antes de que el código necesite ejecutarse \cite{fcc_jit}.
+
+El articulo  señala algo interesante: el código fuente (o el bytecode, en el caso de Java) se traduce a instrucciones de máquina en tiempo real. Esto permite que el programa arranque rápido (porque no compila todo de golpe al principio) y que luego, poco a poco, vaya ganando velocidad. Es una estrategia híbrida.
+
+Lo que nos pareció más relevante de esta fuente es la distinción que hace sobre el contexto. Un compilador estático (AOT) no sabe si el usuario va a usar una función una vez o un millón de veces. El JIT, al estar ahí mientras todo ocurre, tiene esa información privilegiada. Esto cambia por completo las reglas del juego, porque permite optimizaciones que serían arriesgadas o imposibles de hacer antes de ejecutar el programa.
+
+\section{El "Monitor": Perfilado en tiempo de ejecución}
+
+La pregunta clave de nuestra investigación era: ¿Cómo sabe el compilador qué partes optimizar? La respuesta está en el perfilado o \textit{profiling}.
+
+Imaginemos que el entorno de ejecución tiene un contador interno. Cada vez que se llama a un método o se da una vuelta en un bucle, ese contador sube. Según la documentación técnica de IBM \cite{ibm_jit}, el compilador JIT utiliza estos contadores para identificar las zonas \textit{calientes} del código, conocidas como \textit{hot spots}.
+
+Al principio, el programa corre en modo interpretado (o con una compilación muy básica y rápida). El sistema no gasta recursos en optimizar nada porque no sabe qué vale la pena. Pero, cuando una parte del código supera cierto umbral de ejecuciones (digamos, se ha llamado a una función mil veces), el monitor alerta al compilador JIT. En ese momento, el sistema decide que vale la pena invertir tiempo de CPU en compilar esa función específica a código máquina altamente optimizado.
+
+Este proceso es fascinante porque implica que el rendimiento del programa no es constante; mejora con el tiempo. Es lo que se llama \textit{calentamiento} (\textit{warm-up}). Cuanto más tiempo corre el programa, más inteligente se vuelve el JIT sobre cómo ejecutarlo eficientemente.
+
+\section{Optimización Adaptativa y Especulación}
+
+Aquí es donde la cosa se pone más compleja y técnica. Una vez que el JIT decide optimizar, no solo traduce el código tal cual. Hace algo llamado ''optimización especulativa''
+
+Básicamente, el compilador hace apuestas. Si observa que una variable en una función siempre ha sido un número entero durante las últimas 500 llamadas, asume (especula) que siempre será un entero. Entonces, genera código máquina específico para sumar enteros, eliminando todas las comprobaciones de tipo que suelen hacer lenguajes dinámicos como JavaScript. Esto hace que el código sea notablemente rápido.
+
+Pero, ¿qué pasa si la apuesta falla? Si de repente llega un texto en lugar de un número, el código optimizado fallaría. Los sistemas JIT tienen una "salida de emergencia" (llamada \textit{deoptimization} o \textit{bailout}). Si la suposición deja de ser cierta, el sistema tira a la basura el código optimizado y vuelve a la versión interpretada lenta pero segura. Esta capacidad de ir y venir entre versiones rápidas y lentas es lo que llamamos optimización adaptativa \cite{mdn_jit}.
+
+\section{Tracing JIT: Siguiendo el rastro}
+
+Investigando un poco más sobre cómo se implementa esto, encontramos el concepto de \textit{Tracing JIT}, que es muy popular en implementaciones como PyPy para Python. En lugar de mirar funciones enteras, el compilador mira ''caminos'' (\textit{traces}).
+
+Como explican en el artículo de \textit{Kipp.ly}, los programas suelen pasar mucho tiempo en bucles. El Tracing JIT graba exactamente qué camino toma el código dentro de un bucle (por ejemplo, entró al `if`, luego sumó, luego volvió al inicio") \cite{kipp_jit}. Luego, compila esa secuencia lineal de instrucciones. Esto es muy efectivo porque ignora todo el código que no se usa en ese momento, enfocándose puramente en lo que el programa está haciendo en la realidad.
+
+\section{Descripción del Caso Práctico}
+
+\section{Conclusiones}
+
+Realizar este proyecto nos ha permitido cambiar nuestra perspectiva sobre cómo se ejecuta el software. Antes veíamos la compilación como un paso estático, pero ahora entendemos que es un proceso vivo y dinámico.
+
+Podemos concluir que:
+\begin{itemize}
+    \item El JIT es necesario en el mundo actual porque los lenguajes dinámicos (como JS o Python) son muy difíciles de optimizar estáticamente. Se necesita verlos correr para saber cómo hacerlos rápidos.
+    \item La clave de todo es el \textit{profiling}. Sin datos en tiempo real, el compilador estaría ''ciego''.
+    \item La optimización adaptativa permite escribir código limpio y legible, confiando en que el compilador hará el trabajo sucio de optimizar las partes críticas.
+\end{itemize}
+
+En resumen, los compiladores JIT aprovechan el comportamiento del programa para tomar decisiones que un humano o un compilador estático no podrían anticipar.
+
+\begin{thebibliography}{99}
+
+\bibitem{fcc_jit}
+C. Nokes, ``Just-In-Time Compilation Explained,'' \emph{freeCodeCamp.org}, 13-feb-2018. [En línea]. Disponible en: \url{https://www.freecodecamp.org/news/just-in-time-compilation-explained/}. Accedido: 13-dic-2025.
+
+\bibitem{ibm_jit}
+IBM, ``JIT compiler,'' \emph{IBM SDK, Java Technology Documentation}. [En línea]. Disponible en: \url{https://www.ibm.com/docs/es/sdk-java-technology/8?topic=reference-jit-compiler}. Accedido: 13-dic-2025.
+
+\bibitem{mdn_jit}
+Mozilla Developer Network, ``Just-In-Time Compilation,'' \emph{MDN Web Docs}. [En línea]. Disponible en: \url{https://developer.mozilla.org/en-US/docs/Glossary/Just_In_Time_Compilation}. Accedido: 13-dic-2025.
+
+\bibitem{kipp_jit}
+Kipp.ly, ``An Introduction to JITs,'' \emph{Kipp.ly Engineering Blog}. [En línea]. Disponible en: \url{https://kipp.ly/jits-intro/}. Accedido: 13-dic-2025.
+
+\end{thebibliography}
+
+\end{document}
