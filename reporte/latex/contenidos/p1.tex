@@ -45,6 +45,20 @@ Como explican en el artículo de \textit{Kipp.ly}, los programas suelen pasar mu
 
 \section{Descripción del Caso Práctico}
 
+La implementación que hicimos su objetivo es mostrar de manera clara y directa como un compilador Just-In-Time puede ajustar la forma de ejecutar un programa basandose solo en lo que observa durante su ejecución. El sistema comienza ejecutando todas las funciones de manera sencilla sin asumir nada sobre su importancia o frecuencia de uso. 
+
+Durante la ejecución, el sistema mantiene un contador asociado a cada función. Cada vez que una función es llamada, su contador aumenta, permitiendo que el sistema identifique cuáles partes del programa se utilizan con mayor frecuencia. Cuando una función alcanza un número determinado de ejecuciones, se considera que esa parte del programa es relevante y que vale la pena cambiar su forma de ejecución. Esta decisión no se toma antes de correr el programa, sino como resultado directo de su comportamiento observado.
+
+Una vez alcanzado el umbral de uso, el sistema reemplaza la versión original de la función por una version mas directa y eficiente. Este cambio ocurre mientras el programa sigue en ejecucion y no requiere reiniciar ni recompilar el programa completo. De esta forma, se simula el comportamiento de la optimización adaptativa, donde el sistema aprende y se ajusta conforme avanza la ejecución.
+
+Las capturas siguientes muestrans el momento en que el sistema decide realizar este ajuste. En la salida se observa claramente un mensaje que indica cuándo se aplica el ajuste dinámico, seguido de la continuación normal del programa. Esta evidencia visual confirma que la optimización depende del uso real de la función y no de una decisión tomada de antemano.
+
+\begin{center}
+    \includegraphics*[width=15cm]{resources/1.png}
+
+    \includegraphics*[width=15cm]{resources/2.png}
+\end{center}
+
 \section{Conclusiones}
 
 Realizar este proyecto nos ha permitido cambiar nuestra perspectiva sobre cómo se ejecuta el software. Antes veíamos la compilación como un paso estático, pero ahora entendemos que es un proceso vivo y dinámico.
